@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  TF_VAR_azure_region: 'australiaeast'
+  TF_VAR_azure_region: 'uksouth'
   TF_VAR_resource_group_name: 'microservices-demo-rg'
   TF_VAR_acr_name: 'skilltechregistry'
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
@@ -91,7 +91,7 @@ permissions:
   contents: read
 
 env:
-  TF_VAR_azure_region: 'australiaeast'
+  TF_VAR_azure_region: 'uksouth'
   TF_VAR_resource_group_name: 'microservices-demo-rg'
   TF_VAR_acr_name: 'skilltechregistry'
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
