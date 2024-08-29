@@ -28,6 +28,7 @@ jobs:
 
       - name: Install Azure CLI
         run: |
+          set -x
           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Azure login
@@ -39,6 +40,7 @@ jobs:
 
       - name: Install Terraform
         run: |
+          set -x
           sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
           sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
@@ -46,6 +48,7 @@ jobs:
 
       - name: Check if Terraform directory exists
         run: |
+          set -x
           if [ ! -d "deployment/terraform/aks" ]; then
             echo "Directory deployment/terraform/aks does not exist."
             exit 1
@@ -53,30 +56,36 @@ jobs:
 
       - name: Initialize Terraform
         run: |
+          set -x
           cd deployment/terraform/aks
           terraform init
 
       - name: Import Existing Resource Group
         run: |
+          set -x
           terraform import azurerm_resource_group.rg /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg || true
         working-directory: deployment/terraform/aks
 
       - name: Import Existing ACR
         run: |
+          set -x
           terraform import azurerm_container_registry.acr /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerRegistry/registries/skilltechregistry || true
         working-directory: deployment/terraform/aks
 
       - name: Import Existing AKS
         run: |
+          set -x
           terraform import azurerm_kubernetes_cluster.aks /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerService/managedClusters/microservices-demo-aks || true
         working-directory: deployment/terraform/aks
 
       - name: Apply Terraform Configuration
         run: |
+          set -x
           cd deployment/terraform/aks
           terraform apply -auto-approve
 
       - name: Azure CLI logout
         run: |
+          set -x
           az logout
           echo "Azure infrastructure setup completed."
