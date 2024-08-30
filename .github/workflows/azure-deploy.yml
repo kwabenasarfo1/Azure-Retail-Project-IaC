@@ -1,95 +1,3 @@
-# name: Azure Infrastructure Setup
-
-# on:
-#   push:
-#     branches:
-#       - main
-
-# permissions:
-#   id-token: write
-#   contents: read
-
-# env:
-#   TF_VAR_azure_region: 'uksouth'
-#   TF_VAR_resource_group_name: 'microservices-demo-rg'
-#   TF_VAR_acr_name: 'skilltechregistry'
-#   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-#   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-#   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-#   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-
-# jobs:
-#   setup_infrastructure:
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v3
-
-#       - name: Install Azure CLI
-#         run: |
-#           set -x
-#           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-
-#       - name: Azure login
-#         uses: azure/login@v1.4.7
-#         with:
-#           client-id: ${{ secrets.AZURE_CLIENT_ID }}
-#           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-#           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
-#       - name: Install Terraform
-#         run: |
-#           set -x
-#           sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
-#           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
-#           sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
-#           sudo apt-get update && sudo apt-get install terraform
-
-#       - name: Check if Terraform directory exists
-#         run: |
-#           set -x
-#           if [ ! -d "deployment/terraform/aks" ]; then
-#             echo "Directory deployment/terraform/aks does not exist."
-#             exit 1
-#           fi
-
-#       - name: Initialize Terraform
-#         run: |
-#           set -x
-#           cd deployment/terraform/aks
-#           terraform init
-
-#       - name: Import Existing Resource Group
-#         run: |
-#           set -x
-#           terraform import azurerm_resource_group.rg /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg || true
-#         working-directory: deployment/terraform/aks
-
-#       - name: Import Existing ACR
-#         run: |
-#           set -x
-#           terraform import azurerm_container_registry.acr /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerRegistry/registries/skilltechregistry || true
-#         working-directory: deployment/terraform/aks
-
-#       - name: Import Existing AKS
-#         run: |
-#           set -x
-#           terraform import azurerm_kubernetes_cluster.aks /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerService/managedClusters/microservices-demo-aks || true
-#         working-directory: deployment/terraform/aks
-
-#       - name: Apply Terraform Configuration
-#         run: |
-#           set -x
-#           cd deployment/terraform/aks
-#           terraform apply -auto-approve
-
-#       - name: Azure CLI logout
-#         run: |
-#           set -x
-#           az logout
-#           echo "Azure infrastructure setup completed."
-
 name: Azure Infrastructure Setup
 
 on:
@@ -129,7 +37,6 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          federated-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Terraform
         run: |
@@ -156,19 +63,19 @@ jobs:
       - name: Import Existing Resource Group
         run: |
           set -x
-          terraform import azurerm_resource_group.rg /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }} || true
+          terraform import azurerm_resource_group.rg /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg || true
         working-directory: deployment/terraform/aks
 
       - name: Import Existing ACR
         run: |
           set -x
-          terraform import azurerm_container_registry.acr /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.ContainerRegistry/registries/${{ env.TF_VAR_acr_name }} || true
+          terraform import azurerm_container_registry.acr /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerRegistry/registries/skilltechregistry || true
         working-directory: deployment/terraform/aks
 
       - name: Import Existing AKS
         run: |
           set -x
-          terraform import azurerm_kubernetes_cluster.aks /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.ContainerService/managedClusters/microservices-demo-aks || true
+          terraform import azurerm_kubernetes_cluster.aks /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerService/managedClusters/microservices-demo-aks || true
         working-directory: deployment/terraform/aks
 
       - name: Apply Terraform Configuration
@@ -182,3 +89,96 @@ jobs:
           set -x
           az logout
           echo "Azure infrastructure setup completed."
+
+# name: Azure Infrastructure Setup
+
+# on:
+#   push:
+#     branches:
+#       - main
+
+# permissions:
+#   id-token: write
+#   contents: read
+
+# env:
+#   TF_VAR_azure_region: 'uksouth'
+#   TF_VAR_resource_group_name: 'microservices-demo-rg'
+#   TF_VAR_acr_name: 'skilltechregistry'
+#   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+#   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+#   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+#   ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+# jobs:
+#   setup_infrastructure:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v3
+
+#       - name: Install Azure CLI
+#         run: |
+#           set -x
+#           curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+#       - name: Azure login
+#         uses: azure/login@v1.4.7
+#         with:
+#           client-id: ${{ secrets.AZURE_CLIENT_ID }}
+#           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+#           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+#           federated-token: ${{ secrets.GITHUB_TOKEN }}
+
+#       - name: Install Terraform
+#         run: |
+#           set -x
+#           sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
+#           curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+#           sudo apt-add-repository "deb https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+#           sudo apt-get update && sudo apt-get install terraform
+
+#       - name: Check if Terraform directory exists
+#         run: |
+#           set -x
+#           if [ ! -d "deployment/terraform/aks" ]; then
+#             echo "Directory deployment/terraform/aks does not exist."
+#             exit 1
+#           fi
+
+#       - name: Initialize Terraform
+#         run: |
+#           set -x
+#           cd deployment/terraform/aks
+#           terraform init
+
+#       - name: Import Existing Resource Group
+#         run: |
+#           set -x
+#           terraform import azurerm_resource_group.rg /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }} || true
+#         working-directory: deployment/terraform/aks
+
+#       - name: Import Existing ACR
+#         run: |
+#           set -x
+#           terraform import azurerm_container_registry.acr /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.ContainerRegistry/registries/${{ env.TF_VAR_acr_name }} || true
+#         working-directory: deployment/terraform/aks
+
+#       - name: Import Existing AKS
+#         run: |
+#           set -x
+#           terraform import azurerm_kubernetes_cluster.aks /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.ContainerService/managedClusters/microservices-demo-aks || true
+#         working-directory: deployment/terraform/aks
+
+#       - name: Apply Terraform Configuration
+#         run: |
+#           set -x
+#           cd deployment/terraform/aks
+#           terraform apply -auto-approve
+
+#       - name: Azure CLI logout
+#         run: |
+#           set -x
+#           az logout
+#           echo "Azure infrastructure setup completed."
