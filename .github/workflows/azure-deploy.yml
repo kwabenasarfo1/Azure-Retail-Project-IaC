@@ -93,6 +93,7 @@
 name: Azure Infrastructure Setup
 
 on:
+  
   push:
     branches:
       - main
