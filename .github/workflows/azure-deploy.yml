@@ -199,9 +199,9 @@ permissions:
   contents: read
 
 env:
-  TF_VAR_azure_region: 'australiaeast'
+  TF_VAR_azure_region: 'uksouth'
   TF_VAR_resource_group_name: 'microservices-demo-rg'
-  TF_VAR_acr_name: 'skilltechregistry'
+  TF_VAR_acr_name: 'aksretailacr'
   ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
   ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -252,7 +252,7 @@ jobs:
 
       - name: Import Existing ACR
         run: |
-          terraform import azurerm_container_registry.acr /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerRegistry/registries/skilltechregistry || true
+          terraform import azurerm_container_registry.acr /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerRegistry/registries/aksretailacr || true
         working-directory: deployment/terraform/aks
 
       - name: Import Existing AKS
