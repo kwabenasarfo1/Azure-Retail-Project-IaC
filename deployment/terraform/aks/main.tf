@@ -31,3 +31,10 @@ resource "azurerm_kubernetes_cluster" "aks" {
     type = "SystemAssigned"
   }
 }
+
+# Assign AcrPull role to the AKS System-assigned Managed Identity
+resource "azurerm_role_assignment" "acr_pull" {
+  principal_id   = azurerm_kubernetes_cluster.aks.identity[0].principal_id # Reference to AKS MSI
+  role_definition_name = "AcrPull"
+  scope          = azurerm_container_registry.acr.id
+}
