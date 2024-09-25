@@ -99,13 +99,11 @@ jobs:
       - name: Apply Terraform Configuration
         run: |
           cd deployment/terraform/aks
-          if [[ "${{ env.role_assignment_exists }}" == "false" ]]; then
-            terraform apply -target=azurerm_role_assignment.acr_pull -auto-approve
-          else
-            terraform apply -auto-approve
-          fi
+          # If role assignment doesn't exist, Terraform will create it
+          terraform apply -auto-approve
 
       - name: Azure CLI logout
         run: |
           az logout
           echo "Azure infrastructure setup completed."
+
