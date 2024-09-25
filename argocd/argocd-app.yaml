@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: microservices-demo
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/kwabenasarfo1/microservices-demo.git'  # Your GitHub repo
+    path: 'release/kubernetes-manifests-original.yaml'           # Path to the manifest
+    targetRevision: HEAD
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

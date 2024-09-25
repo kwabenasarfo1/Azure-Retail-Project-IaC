@@ -1,0 +1,95 @@
+name: Argo CD Setup and Application Deployment
+
+on:
+  workflow_run:
+    workflows: ["Azure Infrastructure Setup"]
+    types:
+      - completed
+
+
+jobs:
+  deploy-argocd:
+    runs-on: ubuntu-latest
+    
+    env:
+      RESOURCE_GROUP: microservices-demo-rg  
+      CLUSTER_NAME: microservices-demo-aks    
+      GIT_REPO_URL: https://github.com/kwabenasarfo1/microservices-demo.git
+
+    steps:
+      # Step 1: Checkout the code (optional, in case you need any repo files)
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      
+      # Step 2: Get current Kubernetes version dynamically
+      - name: Get Current Cluster Version
+        id: get-version
+        run: |
+          K8S_VERSION=$(kubectl version --short | grep 'Server:' | awk '{print $2}')
+          echo "K8S_VERSION=${K8S_VERSION}" >> $GITHUB_ENV
+
+      # Step 3: Use detected version for Kubectl setup
+      - name: Set up Kubectl with Cluster Version
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.K8S_VERSION }}  # Use the updated environment variable
+
+      # Step 4: Set up AKS credentials 
+      - name: Authenticate with AKS
+        uses: azure/aks-set-context@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          cluster-name: ${{ env.CLUSTER_NAME }} 
+          resource-group: ${{ env.RESOURCE_GROUP }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Step 5: Install Argo CD using Kubectl
+      - name: Install Argo CD
+        run: |
+          kubectl create namespace argocd || true
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+      # Step 6: Wait for Argo CD to be ready
+      - name: Wait for Argo CD components to be ready
+        run: |
+          kubectl rollout status deployment/argocd-server -n argocd
+          kubectl rollout status deployment/argocd-repo-server -n argocd
+          kubectl rollout status deployment/argocd-application-controller -n argocd
+          kubectl rollout status deployment/argocd-dex-server -n argocd
+
+      # Step 7: Add your Git repository to Argo CD
+      - name: Add Git Repository to Argo CD
+        run: |
+          argocd repo add ${{ env.GIT_REPO_URL }}
+
+      # Step 8: Expose the Argo CD UI locally for debugging
+      - name: Port forward Argo CD server
+        run: |
+          kubectl port-forward svc/argocd-server -n argocd 8080:443 &
+          sleep 10
+        continue-on-error: true
+
+      # Step 9: Create an Argo CD Application
+      - name: Create Argo CD Application
+        run: |
+          kubectl apply -f microservices-demo/release/kubernetes-manifests-original.yaml
+      
+      # Step 10: Sync the Argo CD Application
+      - name: Sync the Argo CD Application
+        run: |
+          argocd app sync microservices-demo  # Replace with your application's name
+
+      # Step 11: Get Argo CD admin password
+      - name: Get Argo CD admin password
+        id: get-password
+        run: |
+          ARGO_PASSWORD=$(kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+          echo "ARGO_PASSWORD=${ARGO_PASSWORD}" >> $GITHUB_ENV
+          echo "Argo CD admin password retrieved."
+
+      # Step 12: Open Argo CD UI
+      - name: Open Argo CD UI
+        run: |
+          echo "Argo CD UI is available at https://localhost:8080"
+          echo "Username: admin"
+          echo "Password: ${{ env.ARGO_PASSWORD }}"
