@@ -37,24 +37,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       
-      - name: Get AKS Principal ID
-        id: get-aks-principal-id
-        run: |
-          AKS_PRINCIPAL_ID=$(az aks show --resource-group ${{ env.TF_VAR_resource_group_name }} --name microservices-demo-aks --query identity.principalId -o tsv)
-          echo "AKS_PRINCIPAL_ID=${AKS_PRINCIPAL_ID}" >> $GITHUB_ENV
-        shell: bash
-
-      - name: Get Role Assignment ID for AcrPull
-        id: get-role-assignment-id
-        run: |
-          ROLE_ASSIGNMENT_ID=$(az role assignment list --assignee ${{ env.AKS_PRINCIPAL_ID }} --scope /subscriptions/${{ env.ARM_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.ContainerRegistry/registries/${{ env.TF_VAR_acr_name }} --query "[?roleDefinitionName=='AcrPull'].id" -o tsv)
-          if [ -z "$ROLE_ASSIGNMENT_ID" ]; then
-            echo "No AcrPull role assignment found, skipping import."
-          else
-            echo "ROLE_ASSIGNMENT_ID=${ROLE_ASSIGNMENT_ID}" >> $GITHUB_ENV
-          fi
-        shell: bash
-
       - name: Install Terraform
         run: |
           sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
@@ -68,7 +50,7 @@ jobs:
             echo "Directory deployment/terraform/aks does not exist."
             exit 1
           fi
-
+      
       - name: Initialize Terraform
         run: |
           cd deployment/terraform/aks
@@ -89,11 +71,33 @@ jobs:
           terraform import azurerm_kubernetes_cluster.aks /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/microservices-demo-rg/providers/Microsoft.ContainerService/managedClusters/microservices-demo-aks || true
         working-directory: deployment/terraform/aks
       
-      - name: Import Existing Role Assignment (ACRPull)
-        if: env.ROLE_ASSIGNMENT_ID != ''  # Only run if the role assignment exists
+      - name: Get AKS Principal ID
+        id: get-aks-principal-id
+        run: |
+          AKS_PRINCIPAL_ID=$(az aks show --resource-group ${{ env.TF_VAR_resource_group_name }} --name microservices-demo-aks --query identity.principalId -o tsv)
+          echo "AKS_PRINCIPAL_ID=${AKS_PRINCIPAL_ID}" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Check if AcrPull Role Assignment Exists
+        id: check-role-assignment
+        run: |
+          ROLE_ASSIGNMENT_EXISTS=$(az role assignment list --assignee ${{ env.AKS_PRINCIPAL_ID }} --scope /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.TF_VAR_resource_group_name }}/providers/Microsoft.ContainerRegistry/registries/${{ env.TF_VAR_acr_name }} --query "[?roleDefinitionName=='AcrPull'].id" -o tsv)
+          if [ -z "$ROLE_ASSIGNMENT_EXISTS" ]; then
+            echo "role_assignment_exists=false" >> $GITHUB_ENV
+          else
+            echo "ROLE_ASSIGNMENT_ID=${ROLE_ASSIGNMENT_EXISTS}" >> $GITHUB_ENV
+            echo "role_assignment_exists=true" >> $GITHUB_ENV
+          fi
+        shell: bash
+
+      - name: Import or Create AcrPull Role Assignment
         run: |
           cd deployment/terraform/aks
-          terraform import azurerm_role_assignment.acr_pull ${{ env.ROLE_ASSIGNMENT_ID }}
+          if [[ "${{ env.role_assignment_exists }}" == "true" ]]; then
+            terraform import azurerm_role_assignment.acr_pull ${{ env.ROLE_ASSIGNMENT_ID }}
+          else
+            terraform apply -target=azurerm_role_assignment.acr_pull -auto-approve
+          fi
       
       - name: Apply Terraform Configuration
         run: |
