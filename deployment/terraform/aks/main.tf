@@ -38,18 +38,9 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 }
 
-data "azurerm_role_assignment" "existing_acr_pull" {
-  scope                = azurerm_container_registry.acr.id
-  role_definition_name = "AcrPull"
-  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
-}
-
-# Conditionally create role assignment only if it doesn't already exist
+# Assign AcrPull role to the AKS System-assigned Managed Identity
 resource "azurerm_role_assignment" "acr_pull" {
-  count = length(data.azurerm_role_assignment.existing_acr_pull) == 0 ? 1 : 0
-
-  scope                = azurerm_container_registry.acr.id
+  principal_id   = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id # Reference to AKS MSI
   role_definition_name = "AcrPull"
-  principal_id         = azurerm_kubernetes_cluster.aks.kubelet_identity[0].object_id
+  scope          = azurerm_container_registry.acr.id
 }
-
