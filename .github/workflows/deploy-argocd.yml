@@ -5,8 +5,8 @@ on:
     workflows: ["Azure Infrastructure Setup"]
     types:
       - completed
-
-
+  workflow_dispatch:
+    
 jobs:
   deploy-argocd:
     runs-on: ubuntu-latest
@@ -21,20 +21,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       
-      # Step 2: Get current Kubernetes version dynamically
-      - name: Get Current Cluster Version
-        id: get-version
-        run: |
-          K8S_VERSION=$(kubectl version --short | grep 'Server:' | awk '{print $2}')
-          echo "K8S_VERSION=${K8S_VERSION}" >> $GITHUB_ENV
-
-      # Step 3: Use detected version for Kubectl setup
-      - name: Set up Kubectl with Cluster Version
-        uses: azure/setup-kubectl@v3
-        with:
-          version: ${{ env.K8S_VERSION }}  # Use the updated environment variable
-
-      # Step 4: Set up AKS credentials 
+      # Step 2: Set up AKS credentials 
       - name: Authenticate with AKS
         uses: azure/aks-set-context@v1
         with:
@@ -42,6 +29,19 @@ jobs:
           cluster-name: ${{ env.CLUSTER_NAME }} 
           resource-group: ${{ env.RESOURCE_GROUP }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Step 3: Get current Kubernetes version dynamically
+      - name: Get Current Cluster Version
+        id: get-version
+        run: |
+          K8S_VERSION=$(kubectl version --short | grep 'Server:' | awk '{print $2}')
+          echo "K8S_VERSION=${K8S_VERSION}" >> $GITHUB_ENV
+
+      # Step 4: Use detected version for Kubectl setup
+      - name: Set up Kubectl with Cluster Version
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.K8S_VERSION }}  # Use the updated environment variable
 
       # Step 5: Install Argo CD using Kubectl
       - name: Install Argo CD
